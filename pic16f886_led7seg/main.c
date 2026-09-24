@@ -44,7 +44,7 @@ void HienThi(unsigned int16 a)
 }
 
 // Chong doi phim + bat canh: tra ve 1 dung 1 lan moi lan nhan
-int1 NhanNut(int1 muc, unsigned int8 *dem, int1 *da_nhan)
+int1 NhanNut(int1 muc, unsigned int8 *dem, unsigned int8 *da_nhan)
 {
     if (muc == 0) {                   // dang nhan (keo len 10k, nhan = 0)
         if (*dem < DEBOUNCE) (*dem)++;
@@ -62,7 +62,7 @@ int1 NhanNut(int1 muc, unsigned int8 *dem, int1 *da_nhan)
 void main()
 {
     unsigned int8 dem0 = 0, dem1 = 0;
-    int1 nhan0 = 0, nhan1 = 0;
+    unsigned int8 nhan0 = 0, nhan1 = 0;   // CCS khong ho tro con tro toi int1
 
     setup_adc_ports(NO_ANALOGS);      // RA0..RA3, RB0, RB1 mac dinh la analog tren 16F886
     setup_adc(ADC_OFF);
