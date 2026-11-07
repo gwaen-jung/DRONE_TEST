@@ -17,9 +17,9 @@ Write-Host "   Cuoc thi Thiet ke Vi mach cho Do thi Thong minh lan 3 - Vong Ban 
 Write-Host "========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-foreach ($cfg in @('A', 'B')) {
-    $desc = if ($cfg -eq 'A') { "CAU HINH A (Khop MCU - 14x29-bit Multiplier, Q.10)" } `
-            else              { "CAU HINH B (Tiet kiem Dien tich - 11x21-bit Multiplier, Q.6)" }
+foreach ($cfg in @('B', 'A')) {
+    $desc = if ($cfg -eq 'B') { "CAU HINH CHINH B (Toi uu ASIC - 11x21-bit Multiplier, Q.6, tiet kiem ~26% GE)" } `
+            else              { "CAU HINH DOI CHUNG A (Khop MCU goc - 14x29-bit Multiplier, Q.10)" }
     Write-Host ">>> [BUOC 1] Sinh tham so RTL (pid_params.vh) & Golden Vectors cho $desc..." -ForegroundColor Green
     & $py (Join-Path $icDir 'model\export_rtl.py') $cfg
 
@@ -45,8 +45,8 @@ foreach ($cfg in @('A', 'B')) {
     Write-Host ""
 }
 
-# Khoi phuc mac dinh ve Cau hinh A
-& $py (Join-Path $icDir 'model\export_rtl.py') A | Out-Null
+# Khoi phuc mac dinh ve Cau hinh CHINH B (11x21-bit Multiplier, Q.6) cho Cadence Genus Synthesis
+& $py (Join-Path $icDir 'model\export_rtl.py') B | Out-Null
 Write-Host "========================================================================" -ForegroundColor Green
-Write-Host "   KET QUA TONG: PASS 16.000 / 16.000 MAU (BIT-EXACT 100% CA A & B)     " -ForegroundColor Green
+Write-Host "   KET QUA TONG: PASS 16.000 / 16.000 MAU (CHOT CAU HINH B LAM CHINH)   " -ForegroundColor Green
 Write-Host "========================================================================" -ForegroundColor Green

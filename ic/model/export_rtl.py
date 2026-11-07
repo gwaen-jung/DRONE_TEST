@@ -14,8 +14,8 @@ from pid_model import (AXES, DT, GAINS, INTEGRAL_LIMIT, DERIV_ALPHA, MIX_LIMITS,
 from analyze import build_scenarios
 
 CONFIGS = {
-    'A': FxConfig(fe=10, wk=13, fa=13, fd=4, fu=9, rnd=True),   # khop MCU
-    'B': FxConfig(fe=6, wk=10, fa=8, fd=2, fu=6, rnd=True),     # tiet kiem
+    'B': FxConfig(fe=6, wk=10, fa=8, fd=2, fu=6, rnd=True),     # CHINH: tiet kiem ~26% dien tich, 11x21-bit mult
+    'A': FxConfig(fe=10, wk=13, fa=13, fd=4, fu=9, rnd=True),   # DOI CHUNG: khop hang so MCU goc
 }
 IC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -98,7 +98,7 @@ def write_vectors(cfg):
 
 
 if __name__ == '__main__':
-    name = sys.argv[1].upper() if len(sys.argv) > 1 else 'A'
+    name = sys.argv[1].upper() if len(sys.argv) > 1 else 'B'
     cfg = CONFIGS[name]
     p, w = write_params(cfg, name)
     v, n = write_vectors(cfg)
