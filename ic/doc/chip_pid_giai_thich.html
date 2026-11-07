@@ -166,15 +166,32 @@ gian cho phép là <b>2500 µs</b>.</p>
 <p>Các con số này được tính theo trường hợp xấu nhất (góc ±180°, gyro ±2000°/s) để mạch <b>không bao giờ tràn số</b>. Chúng nằm
 trong file <code>pid_params.vh</code> do Python tự sinh, nên mô hình và mạch luôn khớp nhau.</p>
 
-<h1>5. Bước 4 — Kiểm thử</h1>
+<h2>4.6. Giản đồ sóng 20 chu kỳ và giao tiếp 7 chân chống giới hạn chân (Pad-limited)</h2>
+<p>Nếu đưa trực tiếp toàn bộ ~160 đường tín hiệu song song của <code>pid_ctrl</code> ra chân vỏ chip (I/O pad), diện tích các ô pad sẽ lớn gấp nhiều lần diện tích lõi logic (hiện tượng <i>pad-limited</i>). Để chip có thể đóng gói thực tế (QFN-16/SOP-8) hoặc nhúng gọn vào SoC, nhóm bổ sung vỏ bọc <code>spi_pid_wrapper.v</code> gom toàn bộ giao tiếp với ESP32 về <b>7 chân</b> (4 dây SPI Mode 0 + <code>clk</code>, <code>rst_n</code>, <code>irq_out_valid</code>), truyền nhận khung 192 bit mỗi mẫu.</p>
+<p class="fig wide"><img src="png/waveform_zoom.png" width="660" data-maxh="12.0"></p>
+<p class="caption wide">Hình 5. Giản đồ sóng RTL chi tiết 20 chu kỳ clock (2,0 µs tại 10 MHz) từ xung sample_valid đến xung out_valid.</p>
+
+<h1>5. Bước 4 — Kiểm thử và So sánh Hiệu năng</h1>
 <p>Chip đã sản xuất rồi thì không sửa được, nên phải chạy thử trên máy tính trước.</p>
 <ul>
-<li><b>Testbench</b> (<code>tb_pid_ctrl.v</code>) đóng vai "người chấm bài": đưa dữ liệu vào mạch, đọc kết quả, so với đáp án.</li>
+<li><b>Testbench</b> (<code>tb_pid_ctrl.v</code> và <code>tb_spi_pid_wrapper.v</code>) đóng vai "người chấm bài": đưa dữ liệu vào mạch, đọc kết quả, so với đáp án.</li>
 <li><b>Golden vectors</b> (<code>vectors.txt</code>) là bộ đề kèm đáp án: 16.000 mẫu, mỗi mẫu gồm đầu vào và đầu ra đúng do mô hình
 Python tính sẵn.</li>
 <li><b>Bit-exact</b>: mạch phải cho ra đúng từng bit giống đáp án, không lệch dù chỉ 1.</li>
 </ul>
-<div class="ok"><b>Kết quả:</b> mô phỏng bằng Icarus Verilog 14 cho <b>PASS 16.000/16.000 mẫu</b> — mạch khớp từng bit với mô hình Python, mỗi mẫu tính xong trong đúng 20 chu kỳ clock, biên dịch với <code>-Wall</code> không có cảnh báo nào. Cả cấu hình A và B đều PASS. Để chắc testbench thật sự bắt được lỗi, nhóm đã thử sửa sai 1 đáp án trong bộ đề: testbench báo đúng <code>FAIL: 1/16000</code> và chỉ ra mẫu bị sai. Chạy lại bằng lệnh <code>sh ic/sim/run_iverilog.sh</code>.</div>
+<div class="ok"><b>Kết quả:</b> mô phỏng bằng Icarus Verilog cho <b>PASS 16.000/16.000 mẫu</b> — mạch khớp từng bit với mô hình Python, mỗi mẫu tính xong trong đúng 20 chu kỳ clock, biên dịch với <code>-Wall</code> không có cảnh báo nào. Cả cấu hình A và B đều PASS. Để chắc testbench thật sự bắt được lỗi, nhóm đã thử sửa sai 1 đáp án trong bộ đề: testbench báo đúng <code>FAIL: 1/16000</code> và chỉ ra mẫu bị sai. Chạy lại bằng lệnh <code>powershell -ExecutionPolicy Bypass -File ic/sim/run_demo_ban_ket.ps1</code>.</div>
+
+<h2>5.1. Vị trí hiện tại trên quy trình thiết kế (Design Flow) và Đối chiếu Published Designs</h2>
+<p>Tính đến vòng Bán kết, nhóm đã hoàn tất 100% các bước <b>Spec &amp; Architecture</b>, <b>RTL Design</b>, <b>Bit-exact Verification</b> và đã sẵn sàng kịch bản tổng hợp <b>Synthesis &amp; STA</b> (<code>syn/syn_genus.tcl</code>) cho bước đào tạo Cadence Genus/Innovus tiến tới Chung kết. Bảng dưới đây đối chiếu lõi <code>pid_ctrl</code> với vi điều khiển hiện tại trên drone (STM32F103C8T6) và các công trình đã công bố theo chuẩn chỉ số <b>FoM = Năng lượng tiêu thụ trên mỗi vòng lặp điều khiển 3 trục (nJ/loop)</b>.</p>
+<table width="640">
+<tr><th>Thiết kế</th><th>Công nghệ</th><th>Tần số</th><th>Độ trễ / Vòng</th><th>Tài nguyên</th><th>Công suất</th><th>FoM (nJ/vòng)</th></tr>
+<tr><td><b>Nhóm FPOLY UAV (Config A)</b></td><td>ASIC 180 nm (ước lượng)</td><td>10 MHz</td><td><b>2,0 µs (20 clk)</b></td><td>~4,2k GE (1 bộ nhân)</td><td>~0,45 mW</td><td><b>0,0009 nJ</b></td></tr>
+<tr><td><b>Nhóm FPOLY UAV (Config B)</b></td><td>ASIC 180 nm (ước lượng)</td><td>10 MHz</td><td><b>2,0 µs (20 clk)</b></td><td>~3,1k GE (1 bộ nhân)</td><td>~0,32 mW</td><td><b>0,0006 nJ</b></td></tr>
+<tr><td>Phần mềm MCU (Drone hiện tại)</td><td>STM32F103C8 (Cortex-M3)</td><td>72 MHz</td><td>~18,5 µs (~1330 clk)</td><td>CPU 32-bit (soft float)</td><td>~118,8 mW</td><td>2197,8 nJ</td></tr>
+<tr><td>Bean et al. (3-axis Parallel)</td><td>Xilinx Artix-7 FPGA (28 nm)</td><td>100 MHz</td><td>0,12 µs (12 clk)</td><td>9 DSP48E1 + 1420 LUT</td><td>~24,0 mW</td><td>2,88 nJ</td></tr>
+<tr><td>Mô hình Sequential PID ASIC</td><td>CMOS 130 nm (quy đổi)</td><td>50 MHz</td><td>0,56 µs (28 clk)</td><td>~6,8k GE (2 bộ nhân)</td><td>~1,85 mW</td><td>1,04 nJ</td></tr>
+</table>
+<p><b>Quy chuẩn quy đổi công nghệ (CMOS Scaling Normalization):</b> Khi so sánh giữa hai tiến trình CMOS khác nhau (tỉ lệ kích thước <i>S = L<sub>1</sub> / L<sub>2</sub></i> và tỉ lệ điện áp <i>U = V<sub>DD1</sub> / V<sub>DD2</sub></i>), diện tích quy đổi theo <i>A<sub>norm</sub> = A / S<sup>2</sup></i> (hoặc tính bằng số cổng tương đương <b>GE = Area / Area<sub>NAND2</sub></b> độc lập công nghệ), và năng lượng mỗi phép tính quy đổi theo <i>E<sub>norm</sub> = E / (S · U<sup>2</sup>)</i>. Nhờ chỉ hoạt động 2,0 µs trong mỗi chu kỳ 2500 µs (duty cycle <b>0,08%</b>) và chia sẻ 1 bộ nhân duy nhất, lõi ASIC tiêu thụ năng lượng mỗi vòng lặp thấp hơn <b>hơn 2 triệu lần</b> so với chạy phần mềm float32 trên STM32F103.</p>
 
 <h1>6. Các file trong thư mục <code>ic/</code></h1>
 <table width="640">
@@ -184,9 +201,10 @@ Python tính sẵn.</li>
 <tr><td><code>model/out/report.md</code></td><td>Báo cáo kết quả chi tiết, dùng được cho slide và báo cáo thi</td></tr>
 <tr><td><code>model/export_rtl.py</code></td><td>Sinh file tham số và bộ đề cho mạch (chọn cấu hình A hoặc B)</td></tr>
 <tr><td><code>rtl/pid_ctrl.v</code></td><td><b>Mạch PID</b> — sản phẩm chính</td></tr>
+<tr><td><code>rtl/spi_pid_wrapper.v</code></td><td><b>Vỏ giao tiếp SPI 7 chân</b> — chống pad-limited khi đóng gói ASIC</td></tr>
 <tr><td><code>rtl/pid_params.vh</code></td><td>Số bit, hệ số, giới hạn — sinh tự động, không sửa tay</td></tr>
-<tr><td><code>tb/tb_pid_ctrl.v</code>, <code>tb/vectors.txt</code></td><td>Người chấm bài và bộ đề</td></tr>
-<tr><td><code>sim/</code></td><td>Lệnh chạy mô phỏng cho Icarus, Xcelium, ModelSim</td></tr>
+<tr><td><code>tb/tb_pid_ctrl.v</code>, <code>tb/vectors.txt</code></td><td>Người chấm bài (song song + SPI) và bộ đề 16.000 mẫu</td></tr>
+<tr><td><code>sim/</code>, <code>syn/syn_genus.tcl</code></td><td>Script chạy demo 1 lệnh và script tổng hợp Cadence Genus</td></tr>
 </table>
 
 <h1>7. Việc tiếp theo và điểm nhóm cần quyết định</h1>

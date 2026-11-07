@@ -18,7 +18,8 @@
 //       [112:91]  roll          (22 bit signed Q.FE)
 //       [90:69]   pitch         (22 bit signed Q.FE)
 //       [68:47]   gz            (22 bit signed Q.FE)
-//       [46:0]    reserved/CRC  (47 bit)
+//       [46]      read_only     (1 bit: 1 = chi doc MISO, khong kich sample_valid)
+//       [45:0]    reserved/CRC  (46 bit)
 //   * MISO (Chip -> ESP32, tra ve ket qua cua mau lien truoc):
 //       [191]     busy          (1 bit)
 //       [190:180] m1            (11 bit, 1000..2000 us)
@@ -109,8 +110,9 @@ module spi_pid_wrapper (
     end
 
     // --- Anh xa khung bit sang ngo vao pid_ctrl ---
-    wire                   w_clear    = frame_done &  rx_shift[191];
-    wire                   w_sample   = frame_done & ~rx_shift[191];
+    wire                   w_readonly = rx_shift[46];
+    wire                   w_clear    = frame_done &  rx_shift[191] & ~w_readonly;
+    wire                   w_sample   = frame_done & ~rx_shift[191] & ~w_readonly;
     wire                   w_armed    = rx_shift[190];
     wire [10:0]            w_throttle = rx_shift[189:179];
     wire signed [W_IN-1:0] w_sp_roll  = rx_shift[178 -: W_IN];
